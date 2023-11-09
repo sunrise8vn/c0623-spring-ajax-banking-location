@@ -7,7 +7,7 @@
 </head>
 
 <body>
-    <div class="container">
+    <div class="container-fluid">
         <header>
             <nav class="navbar bg-body-tertiary">
                 <div class="container-fluid">
@@ -31,19 +31,26 @@
             <table id="tbCustomer" class="table table-hover">
                 <thead>
                 <tr>
+                    <th></th>
                     <th>#</th>
                     <th>FullName</th>
                     <th>Email</th>
                     <th>Phone</th>
+                    <th>Province</th>
+                    <th>District</th>
+                    <th>Ward</th>
                     <th>Address</th>
                     <th>Balance</th>
-                    <th colspan="5">Action</th>
                 </tr>
                 </thead>
                 <tbody>
                 </tbody>
             </table>
         </div>
+
+        <footer>
+
+        </footer>
     </div>
 
     <div id="loading" class="sk-chase hide">
@@ -81,6 +88,8 @@
                 getAllProvinces: 'https://vapi.vnappmob.com/api/province/',
                 getAllDistrictsByProvinceId: 'https://vapi.vnappmob.com/api/province/district/',
                 getAllWardsByDistrictId: 'https://vapi.vnappmob.com/api/province/ward/',
+                getCustomerById: 'http://localhost:9000/api/customers/',
+                createCustomer: 'http://localhost:9000/api/customers'
             },
             elements: {},
             loadData: {},
@@ -98,7 +107,19 @@
         page.elements.addressCre = $('#addressCre');
         page.elements.btnCreate = $('#btnCreate');
 
+        page.elements.modalUpdate = $('#modalUpdate');
+        page.elements.frmUpdate = $('#frmUpdate');
+        page.elements.fullNameUp = $('#fullNameUp');
+        page.elements.emailUp = $('#emailUp');
+        page.elements.phoneUp = $('#phoneUp');
+        page.elements.provinceUp = $('#provinceUp');
+        page.elements.districtUp = $('#districtUp');
+        page.elements.wardUp = $('#wardUp');
+        page.elements.addressUp = $('#addressUp');
+        page.elements.btnUpdate = $('#btnUpdate');
+
         page.elements.bodyCustomer = $('#tbCustomer tbody')
+        page.elements.footer = $('footer')
 
         page.elements.loading = $('#loading');
 
@@ -106,11 +127,9 @@
         page.elements.toastBody = $('#toast-body')
         page.elements.btnCloseToast = $('#btnCloseToast')
 
-        const btnUpdate = $('#btnUpdate');
-
         const toastBootstrap = bootstrap.Toast.getOrCreateInstance(page.elements.toastLive)
 
-        let personId = 0;
+        let customerId = 0;
 
         async function fetchALlPerson() {
             return await $.ajax({
@@ -118,14 +137,16 @@
             })
         }
 
-        const getALlPerson = async () => {
+        page.loadData.getALlPerson = async () => {
             const persons = await fetchALlPerson();
 
             persons.forEach(item => {
-                const str = renderPerson(item)
+                const str = page.commands.renderPerson(item)
                 // bodyCustomer.innerHTML += str;
-                bodyCustomer.prepend(str);
+                page.elements.bodyCustomer.prepend(str);
             });
+
+            page.commands.handleClickRow()
 
             const btnEditElems = document.querySelectorAll('.edit')
 
@@ -187,44 +208,47 @@
             return person
         }
 
-        const renderPerson = (obj) => {
+        page.commands.renderPerson = (obj) => {
             return `
-                    <tr id="tr_${obj.id}">
-                        <td>${obj.id}</td>
-                        <td>${obj.fullName}</td>
-                        <td>${obj.email}</td>
-                        <td>${obj.phone}</td>
-                        <td>${obj.address}</td>
-                        <td>${obj.balance}</td>
-                        <td>
-                            <button class="btn btn-outline-secondary edit" id="data_${obj.id}" data-id="${obj.id}">
-                                <i class="far fa-edit"></i>
-                            </button>
-                        </td>
-                        <td>
-                            <button class="btn btn-outline-success deposit" data-id="${obj.id}">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </td>
-                        <td>
-                            <button class="btn btn-outline-warning">
-                                <i class="fas fa-minus"></i>
-                            </button>
-                        </td>
-                        <td>
-                            <button class="btn btn-outline-primary">
-                                <i class="fas fa-exchange-alt"></i>
-                            </button>
-                        </td>
-                        <td>
-                            <button class="btn btn-outline-danger">
-                                <i class="fas fa-ban"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `
+                <tr id="tr_${obj.id}">
+                    <td><span></span></td>
+                    <td>${obj.id}</td>
+                    <td>${obj.fullName}</td>
+                    <td>${obj.email}</td>
+                    <td>${obj.phone}</td>
+                    <td>${obj.locationRegion.provinceName}</td>
+                    <td>${obj.locationRegion.districtName}</td>
+                    <td>${obj.locationRegion.wardName}</td>
+                    <td>${obj.locationRegion.address}</td>
+                    <td>${obj.balance}</td>
+                </tr>
+            `
         }
 
+        page.commands.renderFooter = () => {
+            return `
+                <button class="btn btn-secondary edit">
+                    <i class="far fa-edit"></i>
+                    Update
+                </button>
+                <button class="btn btn-success deposit">
+                    <i class="fas fa-plus"></i>
+                    Deposit
+                </button>
+                <button class="btn btn-warning">
+                    <i class="fas fa-minus"></i>
+                    Withdraw
+                </button>
+                <button class="btn btn-primary">
+                    <i class="fas fa-exchange-alt"></i>
+                    Transfer
+                </button>
+                <button class="btn btn-danger">
+                    <i class="fas fa-ban"></i>
+                    Inactive
+                </button>
+            `
+        }
 
         $('#modalCreate').on('hidden.bs.modal', () => {
             $('#frmCreate').trigger('reset')
@@ -232,23 +256,26 @@
             $('#frmCreate label.error').remove()
         })
 
-        $('#frmCreate').validate({
-            rules: {
-                fullNameCre: {
-                    required: true
-                },
-                addressCre: {
-                    required: true
-                }
-            },
-            messages: {
-                fullNameCre: {
-                    required: 'FullName is required'
-                },
-                addressCre: {
-                    required: 'Address is required'
-                }
-            },
+        page.elements.frmCreate.validate({
+            onkeyup: function(element) {$(element).valid()},
+            onclick: false,
+            onfocusout: false,
+            // rules: {
+            //     fullNameCre: {
+            //         required: true
+            //     },
+            //     addressCre: {
+            //         required: true
+            //     }
+            // },
+            // messages: {
+            //     fullNameCre: {
+            //         required: 'FullName is required'
+            //     },
+            //     addressCre: {
+            //         required: 'Address is required'
+            //     }
+            // },
             errorLabelContainer: "#modalCreate .area-error",
             errorPlacement: function (error, element) {
                 error.appendTo("#modalCreate .area-error");
@@ -263,53 +290,63 @@
                 this.defaultShowErrors();
             },
             submitHandler: () => {
-                createCustomer()
+                page.commands.createCustomer()
             }
         })
 
-        const createCustomer = () => {
-            const fullName = $('#fullNameCre').val()
-            const email = $('#emailCre').val()
-            const phone = $('#phoneCre').val()
-            const address = $('#addressCre').val()
-            const balance = 0
-            const deleted = 0
+        page.commands.createCustomer = () => {
+            const provinceId = page.elements.provinceCre.val()
+            const provinceName = page.elements.provinceCre.find('option:selected').text()
+            const districtId = page.elements.districtCre.val()
+            const districtName = page.elements.districtCre.find('option:selected').text()
+            const wardId = page.elements.wardCre.val()
+            const wardName = page.elements.wardCre.find('option:selected').text()
+            const address = page.elements.addressCre.val()
 
-            const obj = {
+            const locationRegion = {
+                provinceId,
+                provinceName,
+                districtId,
+                districtName,
+                wardId,
+                wardName,
+                address
+            }
+
+            const fullName = page.elements.fullNameCre.val()
+            const email = page.elements.emailCre.val()
+            const phone = page.elements.phoneCre.val()
+
+            const customer = {
                 fullName,
                 email,
                 phone,
-                address,
-                balance,
-                deleted
+                locationRegion
             }
 
-            btnCreate.prop("disabled", true);
+            page.elements.btnCreate.prop("disabled", true);
 
-            loading.removeClass('hide')
+            page.elements.loading.removeClass('hide')
 
             setTimeout(() => {
                 $.ajax(
                     {
-                        headers: {
-                            "Content-type": "application/json; charset=UTF-8"
-                        },
                         method: 'POST',
-                        url: "http://localhost:9000/api/customers",
-                        data: JSON.stringify(obj)
+                        url: page.url.createCustomer,
+                        data: JSON.stringify(customer)
                     }
                 )
                     .done((data) => {
-                        const str = renderPerson(data)
-                        bodyCustomer.prepend(str);
+                        const str = page.commands.renderPerson(data)
+                        page.elements.bodyCustomer.prepend(str);
 
-                        closeModal('modalCreate')
+                        page.elements.modalCreate.modal('hide');
 
-                        toastBody.text('Thêm mới thành công')
+                        page.elements.toastBody.text('Thêm mới thành công')
                         toastBootstrap.show()
 
                         setTimeout(() => {
-                            btnCloseToast.click()
+                            page.elements.btnCloseToast.click()
                         }, 2000);
                     })
                     .fail((err) => {
@@ -318,7 +355,13 @@
                         if (responseJSON) {
                             let str = '<ul>'
                             $.each(responseJSON, (k, v) => {
-                                str += `<li><label for="${k + 'Cre'}">${v}</label></li>`
+                                if (k.includes('.')) {
+                                    str += `<li><label for="${k.split('.')[1] + 'Cre'}">${v}</label></li>`
+                                }
+                                else {
+                                    str += `<li><label for="${k + 'Cre'}">${v}</label></li>`
+                                }
+
                             })
 
                             str += '</ul>'
@@ -327,17 +370,17 @@
                         }
                     })
                     .always(() => {
-                        btnCreate.prop("disabled", false);
-                        loading.addClass('hide')
+                        page.elements.btnCreate.prop("disabled", false);
+                        page.elements.loading.addClass('hide')
                     });
-            }, 2000);
+            }, 1000);
         }
 
         page.elements.btnCreate.on('click', async () => {
             page.elements.frmCreate.trigger('submit')
         })
 
-        btnUpdate.on('click', async () => {
+        page.elements.btnUpdate.on('click', async () => {
             const fullName = document.getElementById('fullNameUp').value
             const email = document.getElementById('emailUp').value
             const phone = document.getElementById('phoneUp').value
@@ -417,12 +460,52 @@
             document.querySelector('body').setAttribute('style', 'overflow: none')
         }
 
+        page.commands.handleClickRow = () => {
+            $('#tbCustomer tbody tr td').on('click', function () {
+                $('#tbCustomer tbody tr td span').removeClass('selected')
+                customerId = $(this).parent().attr('id').replace('tr_', '')
 
-        getALlPerson()
+                const elem = $(this).parent().find('td')[0]
 
+                const span = $(elem).find('span')
+                $(span).addClass('selected')
 
-        page.commands.getAllProvinces = () => {
-            return $.ajax({
+                const str = page.commands.renderFooter()
+                page.elements.footer.html(str)
+
+                page.commands.handleClickEditButton()
+            })
+        }
+
+        page.commands.handleClickEditButton = () => {
+            $('footer button.edit').on('click', () => {
+                page.loadData.getCustomerById();
+            })
+        }
+
+        page.loadData.getCustomerById = async () => {
+            $.ajax({
+                url: page.url.getCustomerById + customerId,
+            })
+                .done(async (data) => {
+                    page.elements.fullNameUp.val(data.fullName)
+                    page.elements.emailUp.val(data.email)
+                    page.elements.phoneUp.val(data.phone)
+                    page.elements.provinceUp.val(data.locationRegion.provinceId)
+
+                    await page.commands.getAllDistricts(data.locationRegion.provinceId, page.elements.districtUp)
+
+                    await page.commands.getAllWards(data.locationRegion.districtId, page.elements.wardUp)
+
+                    page.elements.modalUpdate.modal('show');
+                })
+                .fail((err) => {
+
+                })
+        }
+
+        page.commands.getAllProvinces = async () => {
+            await $.ajax({
                 url: page.url.getAllProvinces
             })
                 .done((data) => {
@@ -432,72 +515,98 @@
                         const str = `<option value="${item.province_id}">${item.province_name}</option>`
 
                         page.elements.provinceCre.append(str)
+                        page.elements.provinceUp.append(str)
                     })
                 })
         }
 
-        page.commands.getAllDistricts = (provinceId) => {
-            return $.ajax({
+        page.commands.getAllDistricts = async (provinceId, elem) => {
+            await $.ajax({
                 url: page.url.getAllDistrictsByProvinceId + provinceId
             })
                 .done((data) => {
-                    page.elements.districtCre.empty();
+                    $(elem).empty();
 
                     const districts = data.results;
 
                     $.each(districts, (index, item) => {
                         const str = `<option value="${item.district_id}">${item.district_name}</option>`
 
-                        page.elements.districtCre.append(str)
+                        $(elem).append(str)
                     })
                 })
         }
 
-        page.commands.getAllWards = (districtId) => {
+        page.commands.getAllWards = (districtId, elem) => {
             $.ajax({
                 url: page.url.getAllWardsByDistrictId + districtId
             })
                 .done((data) => {
-                    page.elements.wardCre.empty();
+                    $(elem).empty();
 
                     const wards = data.results;
 
                     $.each(wards, (index, item) => {
                         const str = `<option value="${item.ward_id}">${item.ward_name}</option>`
 
-                        page.elements.wardCre.append(str)
+                        $(elem).append(str)
                     })
                 })
         }
 
-
-        page.elements.provinceCre.on('change', function () {
+        page.elements.provinceCre.on('change', async function () {
             const provinceId = $(this).val()
 
-            page.commands.getAllDistricts(provinceId).then(() => {
-                const districtId = page.elements.districtCre.find('option:selected').val()
+            await page.commands.getAllDistricts(provinceId, page.elements.districtCre);
 
-                page.commands.getAllWards(districtId)
-            })
+            const districtId = page.elements.districtCre.find('option:selected').val()
+
+            page.commands.getAllWards(districtId, page.elements.wardCre)
+
+        })
+
+        page.elements.provinceUp.on('change', async function () {
+            const provinceId = $(this).val()
+
+            await page.commands.getAllDistricts(provinceId, page.elements.districtUp);
+
+            const districtId = page.elements.districtUp.find('option:selected').val()
+
+            page.commands.getAllWards(districtId, page.elements.wardUp)
         })
 
         page.elements.districtCre.on('change',  function () {
             const districtId = $(this).val()
 
-            page.commands.getAllWards(districtId)
+            page.commands.getAllWards(districtId, page.elements.wardCre)
+        })
+
+        page.elements.districtUp.on('change',  function () {
+            const districtId = $(this).val()
+
+            page.commands.getAllWards(districtId, page.elements.wardUp)
+        })
+
+        $.ajaxSetup({
+            headers: {
+                "Content-type": "application/json; charset=UTF-8"
+            }
         })
 
 
-        $(() => {
-            page.commands.getAllProvinces().then(() => {
-                const provinceId = page.elements.provinceCre.find('option:selected').val()
+        $(async () => {
+            page.loadData.getALlPerson()
 
-                page.commands.getAllDistricts(provinceId).then(() => {
-                    const districtId = page.elements.districtCre.find('option:selected').val()
+            await page.commands.getAllProvinces();
 
-                    page.commands.getAllWards(districtId)
-                })
-            })
+            const provinceId = page.elements.provinceCre.find('option:selected').val()
+
+            await page.commands.getAllDistricts(provinceId, page.elements.districtCre);
+
+            const districtId = page.elements.districtCre.find('option:selected').val()
+
+            page.commands.getAllWards(districtId, page.elements.wardCre)
+
         })
 
     </script>

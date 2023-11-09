@@ -1,18 +1,22 @@
 package com.cg.controller.rest;
 
 
+import com.cg.exception.DataInputException;
 import com.cg.model.Customer;
 import com.cg.model.dto.CustomerCreReqDTO;
+import com.cg.model.dto.CustomerResDTO;
 import com.cg.service.customer.ICustomerService;
 import com.cg.utils.AppUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/customers")
@@ -31,8 +35,21 @@ public class CustomerResController {
         return new ResponseEntity<>(customers, HttpStatus.OK);
     }
 
+    @GetMapping("/{customerId}")
+    public ResponseEntity<?> getById(@PathVariable Long customerId) {
+
+        Customer customer = customerService.findById(customerId).orElseThrow(() -> {
+            throw new DataInputException("Customer not found");
+        });
+
+        CustomerResDTO customerResDTO = customer.toCustomerResDTO();
+
+
+        return new ResponseEntity<>(customerResDTO, HttpStatus.OK);
+    }
+
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody CustomerCreReqDTO customerCreReqDTO, BindingResult bindingResult) {
+    public ResponseEntity<?> create(@Validated @RequestBody CustomerCreReqDTO customerCreReqDTO, BindingResult bindingResult) {
 
         new CustomerCreReqDTO().validate(customerCreReqDTO, bindingResult);
 
@@ -40,15 +57,11 @@ public class CustomerResController {
             return appUtils.mapErrorToResponse(bindingResult);
         }
 
-        Customer customer = new Customer();
-        customer.setFullName(customerCreReqDTO.getFullName());
-        customer.setEmail(customerCreReqDTO.getEmail());
-        customer.setPhone(customerCreReqDTO.getPhone());
-//        customer.setAddress(customerCreReqDTO.getAddress());
+        Customer customer = customerCreReqDTO.toCustomer();
         customer.setBalance(BigDecimal.ZERO);
         customer.setDeleted(false);
 
-        customerService.save(customer);
+        customerService.create(customer);
 
         return new ResponseEntity<>(customer, HttpStatus.CREATED);
     }

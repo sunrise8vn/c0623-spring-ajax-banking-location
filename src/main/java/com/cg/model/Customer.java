@@ -1,6 +1,8 @@
 package com.cg.model;
 
+import com.cg.model.dto.CustomerResDTO;
 import lombok.*;
+import lombok.experimental.Accessors;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -12,6 +14,7 @@ import java.math.BigDecimal;
 @Setter
 @Entity
 @Table(name = "customers")
+@Accessors(chain = true)
 public class Customer {
 
     @Id
@@ -33,5 +36,16 @@ public class Customer {
     private BigDecimal balance = BigDecimal.ZERO;
 
     private Boolean deleted;
+
+    public CustomerResDTO toCustomerResDTO() {
+        return new CustomerResDTO()
+                .setId(id)
+                .setFullName(fullName)
+                .setEmail(email)
+                .setPhone(phone)
+                .setBalance(balance)
+                .setLocationRegion(locationRegion.toLocationRegionResDTO())
+                ;
+    }
 
 }

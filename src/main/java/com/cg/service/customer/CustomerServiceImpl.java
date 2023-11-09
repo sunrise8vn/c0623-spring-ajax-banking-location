@@ -1,13 +1,7 @@
 package com.cg.service.customer;
 
-import com.cg.model.Customer;
-import com.cg.model.Deposit;
-import com.cg.model.Transfer;
-import com.cg.model.Withdraw;
-import com.cg.repository.CustomerRepository;
-import com.cg.repository.DepositRepository;
-import com.cg.repository.TransferRepository;
-import com.cg.repository.WithdrawRepository;
+import com.cg.model.*;
+import com.cg.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +17,9 @@ public class CustomerServiceImpl implements ICustomerService {
 
     @Autowired
     private CustomerRepository customerRepository;
+
+    @Autowired
+    private LocationRegionRepository locationRegionRepository;
 
     @Autowired
     private DepositRepository depositRepository;
@@ -51,6 +48,15 @@ public class CustomerServiceImpl implements ICustomerService {
 
     @Override
     public void save(Customer customer) {
+        customerRepository.save(customer);
+    }
+
+    @Override
+    public void create(Customer customer) {
+        LocationRegion locationRegion = customer.getLocationRegion();
+        locationRegionRepository.save(locationRegion);
+
+        customer.setLocationRegion(locationRegion);
         customerRepository.save(customer);
     }
 

@@ -8,6 +8,8 @@ import lombok.Setter;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
+import javax.validation.Valid;
+
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -18,7 +20,18 @@ public class CustomerCreReqDTO implements Validator {
     private String fullName;
     private String email;
     private String phone;
-    private String address;
+
+    @Valid
+    private LocationRegionCreReqDTO locationRegion;
+
+    public Customer toCustomer() {
+        return new Customer()
+                .setFullName(fullName)
+                .setEmail(email)
+                .setPhone(phone)
+                .setLocationRegion(locationRegion.toLocationRegion())
+                ;
+    }
 
     @Override
     public boolean supports(Class<?> aClass) {
@@ -30,14 +43,14 @@ public class CustomerCreReqDTO implements Validator {
         CustomerCreReqDTO creReqDTO = (CustomerCreReqDTO) o;
 
         String fullName = creReqDTO.fullName;
-        String address = creReqDTO.address;
+//        String address = creReqDTO.locationRegion.getAddress();
 
         if (fullName.length() < 3) {
             errors.rejectValue("fullName", "fullName.length", "Tên phải có ít nhất là 3 ký tự");
         }
 
-        if (address.length() < 3) {
-            errors.rejectValue("address", "address.length", "Địa chỉ phải có ít nhất là 3 ký tự");
-        }
+//        if (address.length() < 3) {
+//            errors.rejectValue("locationRegion.address", "address.length", "Địa chỉ phải có ít nhất là 3 ký tự");
+//        }
     }
 }
