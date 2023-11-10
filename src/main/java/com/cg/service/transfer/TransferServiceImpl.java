@@ -22,11 +22,6 @@ public class TransferServiceImpl implements ITransferService{
     }
 
     @Override
-    public void update(Transfer transfer) {
-
-    }
-
-    @Override
     public void deleteById(Long id) {
 
     }

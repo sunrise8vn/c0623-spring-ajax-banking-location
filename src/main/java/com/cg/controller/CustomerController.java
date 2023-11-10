@@ -1,9 +1,6 @@
 package com.cg.controller;
 
-import com.cg.model.Customer;
-import com.cg.model.Deposit;
-import com.cg.model.Transfer;
-import com.cg.model.Withdraw;
+import com.cg.model.*;
 import com.cg.service.customer.CustomerServiceImpl;
 import com.cg.service.customer.ICustomerService;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -30,11 +30,6 @@ public class DepositServiceImpl implements IDepositService {
     }
 
     @Override
-    public void update(Deposit deposit) {
-
-    }
-
-    @Override
     public void deleteById(Long id) {
 
     }

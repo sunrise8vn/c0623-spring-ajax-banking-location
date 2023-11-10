@@ -1,6 +1,9 @@
 package com.cg.service.customer;
 
 import com.cg.model.*;
+import com.cg.model.dto.CustomerResDTO;
+import com.cg.model.dto.CustomerUpReqDTO;
+import com.cg.model.dto.RecipientWithOutSenderDTO;
 import com.cg.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -47,6 +50,16 @@ public class CustomerServiceImpl implements ICustomerService {
     }
 
     @Override
+    public List<CustomerResDTO> findAllCustomerResDTO() {
+        return customerRepository.findAllCustomerResDTO();
+    }
+
+    @Override
+    public List<RecipientWithOutSenderDTO> findAllRecipientWithOutSenderDTO(Long customerId) {
+        return customerRepository.findAllRecipientWithOutSenderDTO(customerId);
+    }
+
+    @Override
     public void save(Customer customer) {
         customerRepository.save(customer);
     }
@@ -60,9 +73,17 @@ public class CustomerServiceImpl implements ICustomerService {
         customerRepository.save(customer);
     }
 
+
     @Override
-    public void update(Customer customer) {
-       customerRepository.save(customer);
+    public void update(Long customerId, Long locationRegionId, CustomerUpReqDTO customerUpReqDTO) {
+        Customer customer = customerUpReqDTO.toCustomer(customerId);
+
+        LocationRegion locationRegion = customer.getLocationRegion();
+        locationRegion.setId(locationRegionId);
+        locationRegionRepository.save(locationRegion);
+
+        customer.setId(customerId);
+        customerRepository.save(customer);
     }
 
     @Override

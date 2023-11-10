@@ -11,7 +11,5 @@ public interface IGeneralService<E, T> {
 
     void save(E e);
 
-    void update(E e);
-
     void deleteById(T id);
 }

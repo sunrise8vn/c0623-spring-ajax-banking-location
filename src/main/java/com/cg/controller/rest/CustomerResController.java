@@ -5,6 +5,8 @@ import com.cg.exception.DataInputException;
 import com.cg.model.Customer;
 import com.cg.model.dto.CustomerCreReqDTO;
 import com.cg.model.dto.CustomerResDTO;
+import com.cg.model.dto.CustomerUpReqDTO;
+import com.cg.model.dto.RecipientWithOutSenderDTO;
 import com.cg.service.customer.ICustomerService;
 import com.cg.utils.AppUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,8 +17,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/customers")
@@ -30,9 +32,17 @@ public class CustomerResController {
 
     @GetMapping
     public ResponseEntity<?> getALl() {
-        List<Customer> customers = customerService.findAll();
+        List<CustomerResDTO> customerResDTOS = customerService.findAllCustomerResDTO();
 
-        return new ResponseEntity<>(customers, HttpStatus.OK);
+//        List<Customer> customers = customerService.findAll();
+//        List<CustomerResDTO> customerResDTOS = new ArrayList<>();
+//
+//        for (Customer customer : customers) {
+//            CustomerResDTO customerResDTO = customer.toCustomerResDTO();
+//            customerResDTOS.add(customerResDTO);
+//        }
+
+        return new ResponseEntity<>(customerResDTOS, HttpStatus.OK);
     }
 
     @GetMapping("/{customerId}")
@@ -46,6 +56,14 @@ public class CustomerResController {
 
 
         return new ResponseEntity<>(customerResDTO, HttpStatus.OK);
+    }
+
+    @GetMapping("/get-all-recipient-with-out-id/{senderId}")
+    public ResponseEntity<?> getAllRecipientsWithOutId(@PathVariable Long senderId) {
+
+        List<RecipientWithOutSenderDTO> recipients = customerService.findAllRecipientWithOutSenderDTO(senderId);
+
+        return new ResponseEntity<>(recipients, HttpStatus.OK);
     }
 
     @PostMapping
@@ -64,5 +82,25 @@ public class CustomerResController {
         customerService.create(customer);
 
         return new ResponseEntity<>(customer, HttpStatus.CREATED);
+    }
+
+    @PatchMapping("/{customerId}")
+    public ResponseEntity<?> update(@PathVariable Long customerId, @Validated @RequestBody CustomerUpReqDTO customerUpReqDTO, BindingResult bindingResult) {
+
+        Customer customer = customerService.findById(customerId).orElseThrow(() -> {
+           throw new DataInputException("Customer not found");
+        });
+
+        new CustomerUpReqDTO().validate(customerUpReqDTO, bindingResult);
+
+        if (bindingResult.hasFieldErrors()) {
+            return appUtils.mapErrorToResponse(bindingResult);
+        }
+
+        customerService.update(customerId, customer.getLocationRegion().getId(), customerUpReqDTO);
+
+        customer = customerService.findById(customerId).get();
+
+        return new ResponseEntity<>(customer.toCustomerResDTO(), HttpStatus.OK);
     }
 }

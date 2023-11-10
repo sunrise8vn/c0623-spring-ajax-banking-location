@@ -1,6 +1,8 @@
 package com.cg.repository;
 
 import com.cg.model.Customer;
+import com.cg.model.dto.CustomerResDTO;
+import com.cg.model.dto.RecipientWithOutSenderDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -15,6 +17,28 @@ import java.util.List;
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     List<Customer> findAllByIdNot(Long id);
+
+    @Query("SELECT NEW com.cg.model.dto.CustomerResDTO ( " +
+                "cus.id, " +
+                "cus.fullName, " +
+                "cus.email, " +
+                "cus.phone, " +
+                "cus.balance, " +
+                "cus.locationRegion" +
+            ") " +
+            "FROM Customer AS cus"
+    )
+    List<CustomerResDTO> findAllCustomerResDTO();
+
+
+    @Query("SELECT NEW com.cg.model.dto.RecipientWithOutSenderDTO (" +
+                "cus.id, " +
+                "cus.fullName" +
+            ") " +
+            "FROM Customer AS cus " +
+            "WHERE cus.id <> :customerId"
+    )
+    List<RecipientWithOutSenderDTO> findAllRecipientWithOutSenderDTO(@Param("customerId") Long customerId);
 
     @Modifying
     @Query("UPDATE Customer AS cus " +
