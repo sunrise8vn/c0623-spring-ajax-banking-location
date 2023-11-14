@@ -94,7 +94,8 @@
                 getCustomerById: 'http://localhost:9000/api/customers/',
                 getAllRecipientsWithOutId: 'http://localhost:9000/api/customers/get-all-recipient-with-out-id/',
                 createCustomer: 'http://localhost:9000/api/customers',
-                updateCustomer: 'http://localhost:9000/api/customers'
+                updateCustomer: 'http://localhost:9000/api/customers',
+                transfer: 'http://localhost:9000/api/customers/transfer'
             },
             elements: {},
             loadData: {},
@@ -129,6 +130,8 @@
         page.elements.senderPhoneTrf = $('#senderPhoneTrf');
         page.elements.senderBalanceTrf = $('#senderBalanceTrf');
         page.elements.recipientTrf = $('#recipientTrf');
+        page.elements.transferAmountTrf = $('#transferAmountTrf');
+        page.elements.transactionAmountTrf = $('#transactionAmountTrf');
         page.elements.btnTransfer = $('#btnTransfer');
 
         page.elements.bodyCustomer = $('#tbCustomer tbody')
@@ -154,7 +157,7 @@
             const persons = await fetchALlPerson();
 
             persons.forEach(item => {
-                const str = page.commands.renderPerson(item)
+                const str = page.commands.renderCustomer(item)
                 // bodyCustomer.innerHTML += str;
                 page.elements.bodyCustomer.prepend(str);
             });
@@ -167,7 +170,7 @@
             })
         }
 
-        page.commands.renderPerson = (obj) => {
+        page.commands.renderCustomer = (obj) => {
             return `
                 <tr id="tr_${obj.id}">
                     <td><span></span></td>
@@ -303,6 +306,34 @@
             }
         })
 
+        page.elements.frmTransfer.validate({
+            onkeyup: function(element) {$(element).valid()},
+            onclick: false,
+            onfocusout: false,
+            // rules: {
+
+            // },
+            // messages: {
+
+            // },
+            errorLabelContainer: "#modalTransfer .area-error",
+            errorPlacement: function (error, element) {
+                error.appendTo("#modalTransfer .area-error");
+            },
+            showErrors: function(errorMap, errorList) {
+                if (this.numberOfInvalids() > 0) {
+                    $("#modalTransfer .area-error").removeClass("hide").addClass("show");
+                } else {
+                    $("#modalTransfer .area-error").removeClass("show").addClass("hide").empty();
+                    $("#frmTransfer input.error").removeClass("error");
+                }
+                this.defaultShowErrors();
+            },
+            submitHandler: () => {
+                page.commands.transfer();
+            }
+        })
+
         page.commands.createCustomer = () => {
             const provinceId = page.elements.provinceCre.val()
             const provinceName = page.elements.provinceCre.find('option:selected').text()
@@ -346,7 +377,7 @@
                     }
                 )
                     .done((data) => {
-                        const str = page.commands.renderPerson(data)
+                        const str = page.commands.renderCustomer(data)
                         page.elements.bodyCustomer.prepend(str);
 
                         page.elements.modalCreate.modal('hide');
@@ -420,7 +451,7 @@
             })
                 .done((data) => {
                     const updateRow = $('#tr_' + customerId)
-                    const str = page.commands.renderPerson(data)
+                    const str = page.commands.renderCustomer(data)
                     updateRow.replaceWith(str)
 
                     page.elements.modalUpdate.modal('hide');
@@ -452,6 +483,40 @@
                     page.elements.btnUpdate.prop("disabled", false);
                     page.elements.loading.addClass('hide')
                 });
+        }
+
+        page.commands.transfer = () => {
+            const recipientId = +page.elements.recipientTrf.val();
+            const transferAmount = +page.elements.transferAmountTrf.val()
+
+            const obj = {
+                recipientId,
+                transferAmount
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: page.url.transfer + '/' + customerId,
+                data: JSON.stringify(obj)
+            })
+                .done((data) => {
+                    
+                    const sender = data.sender;
+                    const recipient = data.recipient;
+                    const senderStr = page.commands.renderCustomer(sender);
+                    $('#tr_' + sender.id).replaceWith(senderStr);
+
+                    const recipientStr = page.commands.renderCustomer(recipient);
+                    $('#tr_' + recipient.id).replaceWith(recipientStr);
+                    
+                    page.elements.modalTransfer.modal('hide');
+
+                    AppUtils.showSuccess('Transfer successfully');
+                })
+                .fail((err) => {
+                    AppUtils.showError('Transfer unsuccessfully');
+                })
+
         }
 
         page.elements.btnCreate.on('click', async () => {
@@ -609,6 +674,18 @@
             const districtId = $(this).val()
 
             page.commands.getAllWards(districtId, page.elements.wardUp)
+        })
+
+        page.elements.transferAmountTrf.on('change', function () {
+            const transferAmount = $(this).val()
+            const fees = 10;
+            const feesAmount = +transferAmount * fees / 100;
+            const transactionAmount = +transferAmount + feesAmount;
+            page.elements.transactionAmountTrf.val(transactionAmount)
+        })
+
+        page.elements.btnTransfer.on('click', () => {
+            page.elements.frmTransfer.trigger("submit");
         })
 
         $.ajaxSetup({

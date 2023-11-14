@@ -7,6 +7,7 @@ import com.cg.model.Withdraw;
 import com.cg.model.dto.CustomerResDTO;
 import com.cg.model.dto.CustomerUpReqDTO;
 import com.cg.model.dto.RecipientWithOutSenderDTO;
+import com.cg.model.dto.TransferCreReqDTO;
 import com.cg.service.IGeneralService;
 import org.springframework.data.repository.query.Param;
 
@@ -28,6 +29,6 @@ public interface ICustomerService extends IGeneralService<Customer, Long> {
 
     void withdraw(Withdraw withdraw);
 
-    void transfer(Transfer transfer);
+    void transfer(Long senderId, TransferCreReqDTO transferCreReqDTO);
 
 }

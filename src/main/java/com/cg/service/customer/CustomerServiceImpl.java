@@ -1,9 +1,11 @@
 package com.cg.service.customer;
 
+import com.cg.exception.DataInputException;
 import com.cg.model.*;
 import com.cg.model.dto.CustomerResDTO;
 import com.cg.model.dto.CustomerUpReqDTO;
 import com.cg.model.dto.RecipientWithOutSenderDTO;
+import com.cg.model.dto.TransferCreReqDTO;
 import com.cg.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -115,32 +117,45 @@ public class CustomerServiceImpl implements ICustomerService {
     }
 
     @Override
-    public void transfer(Transfer transfer) {
+    public void transfer(Long senderId, TransferCreReqDTO transferCreReqDTO) {
+        Long recipientId = transferCreReqDTO.getRecipientId();
 
-        Customer sender = transfer.getSender();
-        Customer recipient = transfer.getRecipient();
+        if (senderId.equals(recipientId)) {
+            throw new DataInputException("Sender must be different from recipient");
+        }
 
-        BigDecimal transferAmount = transfer.getTransferAmount();
-        Long fees = 10L;
+        Customer sender = customerRepository.findById(senderId).orElseThrow(() -> {
+            throw new DataInputException("Sender not found");
+        });
+
+        Customer recipient = customerRepository.findById(recipientId).orElseThrow(() -> {
+            throw new DataInputException("Recipient not found");
+        });
+
+        BigDecimal senderBalance = sender.getBalance();
+        BigDecimal transferAmount = transferCreReqDTO.getTransferAmount();
+        long fees = 10L;
         BigDecimal feesAmount = transferAmount.multiply(BigDecimal.valueOf(fees)).divide(BigDecimal.valueOf(100L));
         BigDecimal transactionAmount = transferAmount.add(feesAmount);
 
+        if (senderBalance.compareTo(transactionAmount) < 0) {
+            throw new DataInputException("Sender's balance is not enough to transfer");
+        }
+
+        customerRepository.decrementBalance(senderId, transactionAmount);
+
+        customerRepository.incrementBalance(recipientId, transferAmount);
+
+        Transfer transfer = new Transfer();
+        transfer.setSender(sender);
+        transfer.setRecipient(recipient);
+        transfer.setTransferAmount(transferAmount);
         transfer.setFees(fees);
         transfer.setFeesAmount(feesAmount);
         transfer.setTransactionAmount(transactionAmount);
 
-        BigDecimal senderCurrentBalance = sender.getBalance();
-        BigDecimal newSenderBalance = senderCurrentBalance.subtract(transactionAmount);
-        sender.setBalance(newSenderBalance);
-
-        BigDecimal recipientCurrentBalance = recipient.getBalance();
-        BigDecimal newRecipientBalance = recipientCurrentBalance.add(transferAmount);
-        recipient.setBalance(newRecipientBalance);
-
-        customerRepository.save(sender);
-        customerRepository.save(recipient);
-
         transferRepository.save(transfer);
+
     }
 
     @Override

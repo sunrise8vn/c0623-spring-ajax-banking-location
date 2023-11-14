@@ -3,10 +3,7 @@ package com.cg.controller.rest;
 
 import com.cg.exception.DataInputException;
 import com.cg.model.Customer;
-import com.cg.model.dto.CustomerCreReqDTO;
-import com.cg.model.dto.CustomerResDTO;
-import com.cg.model.dto.CustomerUpReqDTO;
-import com.cg.model.dto.RecipientWithOutSenderDTO;
+import com.cg.model.dto.*;
 import com.cg.service.customer.ICustomerService;
 import com.cg.utils.AppUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,8 +14,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/customers")
@@ -102,5 +98,20 @@ public class CustomerResController {
         customer = customerService.findById(customerId).get();
 
         return new ResponseEntity<>(customer.toCustomerResDTO(), HttpStatus.OK);
+    }
+
+    @PostMapping("/transfer/{senderId}")
+    public ResponseEntity<?> transfer(@PathVariable Long senderId, @RequestBody TransferCreReqDTO transferCreReqDTO) {
+
+        customerService.transfer(senderId, transferCreReqDTO);
+
+        Optional<Customer> senderOptional = customerService.findById(senderId);
+        Optional<Customer> recipientOptional = customerService.findById(transferCreReqDTO.getRecipientId());
+
+        Map<String, CustomerResDTO> result = new HashMap<>();
+        result.put("sender", senderOptional.get().toCustomerResDTO());
+        result.put("recipient", recipientOptional.get().toCustomerResDTO());
+
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }
